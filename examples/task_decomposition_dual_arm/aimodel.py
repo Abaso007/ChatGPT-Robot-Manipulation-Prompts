@@ -43,7 +43,7 @@ class ChatGPT:
         # load prompt file
         self.system_prompt = ""
         for prompt_name in prompt_load_order:
-            fp_prompt = os.path.join(dir_prompt, prompt_name + '.txt')
+            fp_prompt = os.path.join(dir_prompt, f'{prompt_name}.txt')
             with open(fp_prompt) as f:
                 data = f.read()
             data_spilit = re.split(r'\[user\]\n|\[assistant\]\n', data)
@@ -84,9 +84,7 @@ class ChatGPT:
         # skip if there is no json part
         if text.find('```') == -1:
             return text
-        text_json = text[text.find(
-            '```') + 3:text.find('```', text.find('```') + 3)]
-        return text_json
+        return text[text.find('```') + 3 : text.find('```', text.find('```') + 3)]
 
     def generate(self, message, environment, is_user_feedback=False):
         deployment_name = self.credentials["chatengine"]["AZURE_OPENAI_DEPLOYMENT_NAME_CHATGPT"]
@@ -143,7 +141,7 @@ class ChatGPT:
     def dump_json(self, dump_name=None):
         if dump_name is not None:
             # dump the dictionary to json file dump 1, 2, ...
-            fp = os.path.join(dump_name + '.json')
+            fp = os.path.join(f'{dump_name}.json')
             with open(fp, 'w') as f:
                 json.dump(self.json_dict, f, indent=4)
 
@@ -176,12 +174,12 @@ if __name__ == "__main__":
             'Open the fridge with the right arm, take the juice and put it on the floor with the left arm, and close the fridge',
         ]
     else:
-        parser.error('Invalid scenario name:' + scenario_name)
+        parser.error(f'Invalid scenario name:{scenario_name}')
 
     aimodel = ChatGPT(credentials, prompt_load_order=prompt_load_order)
 
-    if not os.path.exists('./out/' + scenario_name):
-        os.makedirs('./out/' + scenario_name)
+    if not os.path.exists(f'./out/{scenario_name}'):
+        os.makedirs(f'./out/{scenario_name}')
     for i, instruction in enumerate(instructions):
         print(json.dumps(environment))
         text = aimodel.generate(

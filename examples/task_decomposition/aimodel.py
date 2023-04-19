@@ -43,7 +43,7 @@ class ChatGPT:
         # load prompt file
         self.system_prompt = ""
         for prompt_name in prompt_load_order:
-            fp_prompt = os.path.join(dir_prompt, prompt_name + '.txt')
+            fp_prompt = os.path.join(dir_prompt, f'{prompt_name}.txt')
             with open(fp_prompt) as f:
                 data = f.read()
             data_spilit = re.split(r'\[user\]\n|\[assistant\]\n', data)
@@ -70,9 +70,9 @@ class ChatGPT:
         for message in self.messages:
             prompt += f"\n<|im_start|>{message['sender']}\n{message['text']}\n<|im_end|>"
         prompt += "\n<|im_start|>assistant\n"
-        print('prompt length: ' + str(len(enc.encode(prompt))))
+        print(f'prompt length: {len(enc.encode(prompt))}')
         if len(enc.encode(prompt)) > self.max_token_length - \
-                self.max_completion_length:
+                    self.max_completion_length:
             print('prompt too long. truncated.')
             # truncate the prompt by removing the oldest two messages
             self.messages = self.messages[2:]
@@ -85,9 +85,7 @@ class ChatGPT:
         # skip if there is no json part
         if text.find('```') == -1:
             return text
-        text_json = text[text.find(
-            '```') + 3:text.find('```', text.find('```') + 3)]
-        return text_json
+        return text[text.find('```') + 3 : text.find('```', text.find('```') + 3)]
 
     def generate(self, message, environment, is_user_feedback=False):
         deployment_name = self.credentials["chatengine"]["AZURE_OPENAI_DEPLOYMENT_NAME_CHATGPT"]
@@ -144,7 +142,7 @@ class ChatGPT:
     def dump_json(self, dump_name=None):
         if dump_name is not None:
             # dump the dictionary to json file dump 1, 2, ...
-            fp = os.path.join(dump_name + '.json')
+            fp = os.path.join(f'{dump_name}.json')
             with open(fp, 'w') as f:
                 json.dump(self.json_dict, f, indent=4)
 
@@ -159,7 +157,32 @@ if __name__ == "__main__":
     args = parser.parse_args()
     scenario_name = args.scenario
     # 1. example of moving objects on the table and the shelf
-    if scenario_name == 'shelf':
+    if scenario_name == 'drawer':
+        environment = {"assets": ["<drawer>", "<floor>"],
+                       "asset_states": {"<drawer>": "on_something(<floor>)"},
+                       "objects": ["<drawer_handle>"],
+                       "object_states": {"<drawer_handle>": "closed()"}}
+        instructions = ['Open the drawer widely',
+                        'Close the drawer half way',
+                        'Close the drawer fully']
+    elif scenario_name == 'fridge':
+        environment = {
+            "assets": [
+                "<fridge>",
+                "<floor>"],
+            "asset_states": {
+                "<fridge>": "on_something(<floor>)"},
+            "objects": [
+                "<fridge_handle>",
+                "<juice>"],
+            "object_states": {
+                "<fridge_handle>": "closed()",
+                "<juice>": "inside_something(<fridge>)"}}
+        instructions = ['Open the fridge half way',
+                        'Open the fridge wider',
+                        'Take the juice in the fridge and put it on the floor',
+                        'Close the fridge']
+    elif scenario_name == 'shelf':
         environment = {
             "assets": [
                 "<table>",
@@ -180,35 +203,6 @@ if __name__ == "__main__":
                         'Throw away the spam into the trash bin',
                         'Move the juice on top of the table',
                         'Throw away the juice']
-    # 2. example of opening and closing the fridge, and putting the juice on
-    # the floor
-    elif scenario_name == 'fridge':
-        environment = {
-            "assets": [
-                "<fridge>",
-                "<floor>"],
-            "asset_states": {
-                "<fridge>": "on_something(<floor>)"},
-            "objects": [
-                "<fridge_handle>",
-                "<juice>"],
-            "object_states": {
-                "<fridge_handle>": "closed()",
-                "<juice>": "inside_something(<fridge>)"}}
-        instructions = ['Open the fridge half way',
-                        'Open the fridge wider',
-                        'Take the juice in the fridge and put it on the floor',
-                        'Close the fridge']
-    # 3. example of opening and closing the drawer
-    elif scenario_name == 'drawer':
-        environment = {"assets": ["<drawer>", "<floor>"],
-                       "asset_states": {"<drawer>": "on_something(<floor>)"},
-                       "objects": ["<drawer_handle>"],
-                       "object_states": {"<drawer_handle>": "closed()"}}
-        instructions = ['Open the drawer widely',
-                        'Close the drawer half way',
-                        'Close the drawer fully']
-    # 4. example of wiping the table
     elif scenario_name == 'table':
         environment = {
             "assets": [
@@ -224,7 +218,6 @@ if __name__ == "__main__":
                 "<sponge>": "on_something(<table1>)"}}
         instructions = ['Put the sponge on the table2',
                         'Wipe the table2 with the sponge']
-    # 5. example of wiping the window
     elif scenario_name == 'window':
         environment = {
             "assets": [
@@ -242,12 +235,12 @@ if __name__ == "__main__":
             'Get the sponge from the table and wipe the window with it. After that, put the sponge back on the table',
             'Throw away the sponge on the table']
     else:
-        parser.error('Invalid scenario name:' + scenario_name)
+        parser.error(f'Invalid scenario name:{scenario_name}')
 
     aimodel = ChatGPT(credentials, prompt_load_order=prompt_load_order)
 
-    if not os.path.exists('./out/' + scenario_name):
-        os.makedirs('./out/' + scenario_name)
+    if not os.path.exists(f'./out/{scenario_name}'):
+        os.makedirs(f'./out/{scenario_name}')
     for i, instruction in enumerate(instructions):
         print(json.dumps(environment))
         text = aimodel.generate(
